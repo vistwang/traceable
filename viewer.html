@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traceable Recording Viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb-player@latest/dist/style.css" />
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            max-width: 1024px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+
+        #player-container {
+            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Traceable Recording Viewer</h1>
+        <p>Upload a <code>recording.zip</code> file to replay the session.</p>
+
+        <div class="upload-area" id="drop-zone">
+            <p>Drag & drop your recording.zip here or click to select</p>
+            <input type="file" id="file-input" accept=".zip" style="display: none;" />
+        </div>
+
+        <div id="player-container"></div>
+    </div>
+
+    <script type="module" src="/src/viewer/main.ts"></script>
+</body>
+
+</html>

@@ -1,0 +1,37 @@
+{
+  "name": "traceable-sdk",
+  "version": "0.0.1",
+  "description": "A lightweight rewindable screen recording SDK",
+  "type": "module",
+  "main": "./dist/sdk.umd.js",
+  "module": "./dist/sdk.es.js",
+  "types": "./dist/core/sdk.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/sdk.es.js",
+      "require": "./dist/sdk.umd.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "comlink": "^4.4.1",
+    "fflate": "^0.8.2",
+    "rrweb": "^2.0.0-alpha.11",
+    "rrweb-player": "^1.0.0-alpha.4",
+    "svelte": "^4.2.12"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^3.0.2",
+    "@tsconfig/svelte": "^5.0.2",
+    "svelte-check": "^3.6.7",
+    "svelte-preprocess": "^5.1.3",
+    "tslib": "^2.6.2",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.6"
+  }
+}

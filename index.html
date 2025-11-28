@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traceable SDK Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        p {
+            line-height: 1.6;
+            color: #666;
+        }
+
+        .interactive-area {
+            margin-top: 20px;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        input {
+            padding: 10px;
+            margin: 10px;
+            width: 200px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Traceable SDK Test Page</h1>
+        <p>This page is used to verify the functionality of the Traceable SDK.</p>
+        <p>The SDK should initialize automatically and show a "Report Bug" button in the bottom right corner.</p>
+
+        <div class="interactive-area">
+            <h3>Interactive Zone</h3>
+            <p>Interact with these elements to generate rrweb events.</p>
+            <input type="text" placeholder="Type something here..." />
+            <br /><br />
+            <button id="click-me">Click Me!</button>
+            <p id="counter">Clicks: 0</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { TraceableSDK } from './src/core/sdk.ts';
+
+        // Initialize SDK
+        const sdk = new TraceableSDK();
+        sdk.init();
+
+        // Override the download method to upload to our local server for testing
+        // In JS, we can access private members if they are not hard privates (#).
+        // TS 'private' is just compile time.
+
+        const originalDownload = sdk.download;
+        sdk.download = async (data) => {
+            console.log('Intercepted download, uploading to server...');
+            try {
+                const response = await fetch('http://localhost:3000/upload', {
+                    method: 'POST',
+                    body: data,
+                    headers: {
+                        'Content-Type': 'application/zip'
+                    }
+                });
+                const result = await response.json();
+                console.log('Upload success:', result);
+                // alert('Recording saved to root directory!');
+            } catch (err) {
+                console.error('Upload failed:', err);
+                alert('Upload failed, check console.');
+            }
+        };
+
+        // Simple interaction logic
+        let count = 0;
+        document.getElementById('click-me').addEventListener('click', () => {
+            count++;
+            document.getElementById('counter').innerText = `Clicks: ${count}`;
+        });
+    </script>
+</body>
+
+</html>
