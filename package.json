@@ -1,22 +1,30 @@
 {
-  "name": "traceable-sdk",
+  "name": "@vistwang/traceable",
   "version": "0.0.1",
   "description": "A lightweight rewindable screen recording SDK",
   "type": "module",
   "main": "./dist/sdk.umd.js",
   "module": "./dist/sdk.es.js",
   "types": "./dist/core/sdk.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "import": "./dist/sdk.es.js",
-      "require": "./dist/sdk.umd.js"
+      "require": "./dist/sdk.umd.js",
+      "types": "./dist/core/sdk.d.ts"
     }
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "comlink": "^4.4.1",
