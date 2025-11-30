@@ -1,6 +1,6 @@
 {
   "name": "@vistwang/traceable",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A lightweight rewindable screen recording SDK",
   "type": "module",
   "main": "./dist/sdk.umd.js",

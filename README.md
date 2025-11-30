@@ -20,14 +20,27 @@
 -   **User Behavior Tracking**: Track user journeys across the application to understand usage patterns and drop-off points.
 
 
-## 📦 Installation
+## 📦 Integration Methods
+
+### 1. Modern Frameworks (NPM)
+
+Best for React, Vue, Angular, Next.js, etc.
 
 ```bash
 npm install @vistwang/traceable
-# or
-yarn add @vistwang/traceable
-# or
-pnpm add @vistwang/traceable
+```
+
+### 2. Traditional / CDN (Script Tag)
+
+Best for legacy projects (jQuery), low-code platforms, or GTM injection.
+
+```html
+<script src="https://unpkg.com/@vistwang/traceable/dist/sdk.umd.js"></script>
+<script>
+  // The SDK is mounted to window.TraceableSDK
+  var sdk = new TraceableSDK({ autoStart: true });
+  sdk.identify('user-456');
+</script>
 ```
 
 ## 🚀 Usage
@@ -40,16 +53,49 @@ Initialize the SDK in your application's entry point:
 import { TraceableSDK } from '@vistwang/traceable';
 
 // Initialize the SDK
-const sdk = new TraceableSDK();
+// Initialize the SDK with options
+const sdk = new TraceableSDK({
+  autoStart: true,
+  bufferSizeMs: 30000 // 30 seconds
+});
 
-// Start recording
-// This will also mount the "Report Bug" button in the bottom right corner
-sdk.init();
+// Identify the user (Optional but recommended)
+sdk.identify('user-123', {
+  plan: 'pro',
+  role: 'admin'
+});
+
+// Manual capture (e.g., in error boundary)
+try {
+  // ... risky code
+} catch (err) {
+  sdk.capture('error_boundary');
+}
 ```
 
-### Custom Configuration (Coming Soon)
+## 📚 API Reference
 
-Currently, the SDK defaults to a 30-second buffer. Configuration options for buffer size and UI customization are planned for future releases.
+### `new TraceableSDK(options?)`
+
+-   `options.bufferSizeMs` (number): Recording buffer duration in milliseconds. Default: `30000` (30s).
+-   `options.autoStart` (boolean): Whether to start recording immediately. Default: `false`.
+
+### `sdk.init()`
+
+Starts the recording (if not already started) and mounts the feedback UI.
+
+### `sdk.identify(userId, context?)`
+
+Sets user identity for the recording.
+
+-   `userId` (string): Unique user identifier.
+-   `context` (object): Additional metadata (e.g., role, plan).
+
+### `sdk.capture(reason?)`
+
+Manually triggers a recording export.
+
+-   `reason` (string): The reason for the capture (e.g., "manual", "error").
 
 ## 🛠 Technical Implementation
 

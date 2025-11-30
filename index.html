@@ -113,6 +113,26 @@
             count++;
             document.getElementById('counter').innerText = `Clicks: ${count}`;
         });
+
+        // Test Identify
+        const identifyBtn = document.createElement('button');
+        identifyBtn.innerText = 'Identify User';
+        identifyBtn.style.marginTop = '10px';
+        identifyBtn.onclick = () => {
+            sdk.identify('test-user-123', { role: 'tester', plan: 'pro' });
+            alert('User Identified: test-user-123');
+        };
+        document.body.appendChild(identifyBtn);
+
+        // Test Capture
+        const captureBtn = document.createElement('button');
+        captureBtn.innerText = 'Manual Capture';
+        captureBtn.style.marginLeft = '10px';
+        captureBtn.onclick = () => {
+            sdk.capture('manual_test_button');
+        };
+        document.body.appendChild(captureBtn);
+
     </script>
 </body>
 
