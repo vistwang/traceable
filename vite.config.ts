@@ -1,9 +1,17 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { resolve } from 'path';
+import dts from 'vite-plugin-dts';
 
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [
+    svelte(),
+    dts({
+      include: ['src/core/sdk.ts', 'src/utils/buffer.ts'], // Explicitly include source files
+      rollupTypes: true, // Rollup types into a single file if possible
+      insertTypesEntry: true, // Add types entry to package.json
+    })
+  ],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/core/sdk.ts'),
