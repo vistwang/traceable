@@ -13,14 +13,21 @@
 -   **Style Isolation**: UI components are mounted in **Shadow DOM** to prevent CSS conflicts with your application.
 -   **TypeScript Support**: Written in TypeScript with full type definitions.
 
+## 💡 Use Cases
+
+-   **Production Bug Reproduction**: Automatically capture the user's actions leading up to a crash or bug report, allowing developers to replay the exact scenario.
+-   **User Behavior Analysis**: Analyze how users interact with specific features or flows to optimize UX.
+-   **User Behavior Tracking**: Track user journeys across the application to understand usage patterns and drop-off points.
+
+
 ## 📦 Installation
 
 ```bash
-npm install traceable-sdk
+npm install @vistwang/traceable
 # or
-yarn add traceable-sdk
+yarn add @vistwang/traceable
 # or
-pnpm add traceable-sdk
+pnpm add @vistwang/traceable
 ```
 
 ## 🚀 Usage
@@ -30,7 +37,7 @@ pnpm add traceable-sdk
 Initialize the SDK in your application's entry point:
 
 ```typescript
-import { TraceableSDK } from 'traceable-sdk';
+import { TraceableSDK } from '@vistwang/traceable';
 
 // Initialize the SDK
 const sdk = new TraceableSDK();
@@ -62,7 +69,13 @@ Traceable SDK is built with a focus on performance and reliability. Here's how i
 -   **Compression**: Uses `fflate` to ZIP the recording data on the worker thread before sending it back to the main thread for download.
 
 ### 3. Viewer
-The SDK produces a standard ZIP file containing a `recording.json`. This can be replayed using the provided Viewer (see `viewer.html` in the repo) or any standard `rrweb` player.
+The SDK produces a standard ZIP file containing a `recording.json`. This can be replayed using the provided Viewer.
+
+To use the viewer locally:
+1.  Clone the repository.
+2.  Run `npm install` and `npm run dev`.
+3.  Navigate to `http://localhost:5173/viewer.html`.
+4.  Drag and drop the `recording.zip` file.
 
 ## 💻 Development
 
@@ -70,7 +83,7 @@ The SDK produces a standard ZIP file containing a `recording.json`. This can be 
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/traceable-sdk.git
+git clone https://github.com/vistwang/traceable.git
 
 # Install dependencies
 npm install
