@@ -2,6 +2,22 @@ import * as rrweb from 'rrweb';
 import * as Comlink from 'comlink';
 import FeedbackModal from '../ui/FeedbackModal.svelte';
 import RecorderWorker from '../worker/recorder.worker.ts?worker';
+import type { TraceablePlugin } from './plugin';
+
+export interface TraceablePrivacyOptions {
+  blockClass?: string | RegExp;
+  ignoreClass?: string | RegExp;
+  maskTextClass?: string | RegExp;
+  maskInputOptions?: {
+    color?: boolean;
+    date?: boolean;
+    email?: boolean;
+    password?: boolean;
+    select?: boolean;
+    text?: boolean;
+    textarea?: boolean;
+  };
+}
 
 export interface TraceableOptions {
   /**
@@ -12,155 +28,200 @@ export interface TraceableOptions {
    * 是否自动开始录制，默认 false
    */
   autoStart?: boolean;
+  /**
+   * 采样率 (0.0 - 1.0)，默认 1.0
+   */
+  sampleRate?: number;
+  /**
+   * 隐私配置
+   */
+  privacy?: TraceablePrivacyOptions;
+  /**
+   * 插件列表
+   */
+  plugins?: TraceablePlugin[];
+}
+
+export interface Breadcrumb {
+  category: string;
+  message: string;
+  level?: 'info' | 'warning' | 'error';
+  data?: any;
+  timestamp?: number;
 }
 
 /**
- * TraceableSDK 主类
- * 负责初始化录制、管理 Worker 通信以及挂载 UI 组件。
+ * TraceableSDK 主类 (Singleton)
  */
 export class TraceableSDK {
+  private static instance: TraceableSDK;
   private worker: Worker;
-  private remote: any; // Comlink 包装后的远程 Worker 对象
-  private stopFn: (() => void) | null = null; // rrweb 停止录制的函数
+  private remote: any;
+  private stopFn: (() => void) | null = null;
   private options: TraceableOptions = {
     bufferSizeMs: 30000,
-    autoStart: false
+    autoStart: false,
+    sampleRate: 1.0,
   };
+  private plugins: TraceablePlugin[] = [];
 
-  constructor(options?: TraceableOptions) {
-    if (options) {
-      this.options = { ...this.options, ...options };
-    }
-
-    // 实例化 Web Worker
-    // 使用 Vite 的 ?worker 后缀导入，确保正确打包
+  private constructor() {
     this.worker = new RecorderWorker();
-    // 使用 Comlink 包装 Worker，实现 RPC 调用
     this.remote = Comlink.wrap(this.worker);
+  }
 
-    // 如果配置了 bufferSizeMs，通知 Worker 更新配置
-    // 注意：Worker 初始化是异步的，这里只是发送指令，Worker 内部会处理
-    if (this.options.bufferSizeMs) {
-        this.remote.setBufferSize(this.options.bufferSizeMs);
+  public static getInstance(): TraceableSDK {
+    if (!TraceableSDK.instance) {
+      TraceableSDK.instance = new TraceableSDK();
     }
-
-    if (this.options.autoStart) {
-      this.init();
-    }
+    return TraceableSDK.instance;
   }
 
   /**
    * 初始化 SDK
-   * 1. 开启 rrweb 录制
-   * 2. 挂载反馈 UI
    */
-  public async init() {
-    if (this.stopFn) return; // 避免重复初始化
+  public init(options?: TraceableOptions) {
+    if (options) {
+      this.options = { ...this.options, ...options };
+    }
 
-    // 启动 rrweb 录制
-    const recordFn = rrweb.record({
-      emit: (event) => {
-        // 将录制到的事件直接转发给 Worker 处理
-        // 避免在主线程进行复杂的数据处理或存储，减少对业务页面的性能影响
-        this.remote.addEvent(event);
-      },
-      // 每 5 秒生成一个关键帧 (Full Snapshot)
-      // 这对于切片非常重要，确保我们随时截取的一段数据都能找到最近的快照进行回放
-      checkoutEveryNms: 5000, 
-    });
+    // 采样率检查
+    if (this.options.sampleRate && Math.random() > this.options.sampleRate) {
+      console.log('[TraceableSDK] Sampled out');
+      return;
+    }
+
+    // 配置 Worker
+    if (this.options.bufferSizeMs) {
+      this.remote.setBufferSize(this.options.bufferSizeMs);
+    }
+
+    // 安装插件
+    if (this.options.plugins) {
+      this.plugins = this.options.plugins;
+      this.plugins.forEach(p => p.install(this));
+    }
+
+    if (this.options.autoStart) {
+      this.start();
+    }
     
-    this.stopFn = recordFn || null;
-
     this.mountUI();
     console.log('[TraceableSDK] Initialized');
   }
 
   /**
-   * 设置用户身份信息
-   * @param userId 用户唯一标识
-   * @param context 其他上下文信息 (如 role, plan 等)
+   * 开始录制
+   */
+  public start() {
+    if (this.stopFn) return;
+
+    const recordOptions: any = {
+      emit: (event: any) => {
+        this.remote.addEvent(event);
+      },
+      checkoutEveryNms: 5000,
+    };
+
+    // 映射隐私配置
+    if (this.options.privacy) {
+      const p = this.options.privacy;
+      if (p.blockClass) recordOptions.blockClass = p.blockClass;
+      if (p.ignoreClass) recordOptions.ignoreClass = p.ignoreClass;
+      if (p.maskTextClass) recordOptions.maskTextClass = p.maskTextClass;
+      if (p.maskInputOptions) recordOptions.maskInputOptions = p.maskInputOptions;
+    }
+
+    const recordFn = rrweb.record(recordOptions);
+    this.stopFn = recordFn || null;
+  }
+
+  /**
+   * 停止录制
+   */
+  public stop() {
+    if (this.stopFn) {
+      this.stopFn();
+      this.stopFn = null;
+    }
+  }
+
+  /**
+   * 设置用户身份
    */
   public identify(userId: string, context?: Record<string, any>) {
-      this.remote.setUserInfo({ userId, context });
-      console.log('[TraceableSDK] User identified:', userId);
+    this.remote.setUserInfo({ userId, context });
   }
 
   /**
-   * 手动触发上报
-   * @param reason 上报原因 (如 "manual", "error", "feedback")
+   * 设置全局标签
    */
-  public async capture(reason: string = 'manual') {
-      console.log(`[TraceableSDK] Capturing recording (reason: ${reason})...`);
-      try {
-          // 获取压缩后的 ZIP 数据 (Uint8Array)
-          // 传递 reason 给 worker，worker 可以将其打包进 metadata
-          const compressedData = await this.remote.exportData(reason);
-          this.download(compressedData);
-      } catch (e) {
-          console.error('[TraceableSDK] Capture failed:', e);
-      }
+  public setTag(key: string, value: string) {
+    this.remote.setTag(key, value);
   }
 
   /**
-   * 挂载 UI 组件
-   * 使用 Shadow DOM 技术，确保 SDK 的样式不会污染宿主页面，
-   * 同时宿主页面的样式也不会影响 SDK UI。
+   * 添加面包屑
    */
-  private mountUI() {
-    if (document.getElementById('traceable-sdk-host')) return;
-
-    const host = document.createElement('div');
-    host.id = 'traceable-sdk-host';
-    document.body.appendChild(host);
-
-    // 创建 Shadow Root
-    const shadow = host.attachShadow({ mode: 'open' });
-    
-    // 将 Svelte 组件挂载到 Shadow Root 中
-    new FeedbackModal({
-      target: shadow,
-    }).$on('export', () => {
-        // 监听组件内部抛出的 export 事件
-        this.capture('feedback_button');
+  public addBreadcrumb(breadcrumb: Breadcrumb) {
+    this.remote.addBreadcrumb({
+      ...breadcrumb,
+      timestamp: breadcrumb.timestamp || Date.now()
     });
   }
 
   /**
-   * 导出数据 (兼容旧 API，建议使用 capture)
+   * 手动触发上报
    */
-  public async export() {
-    return this.capture('legacy_export');
+  public async capture(reason: string = 'manual', context?: any) {
+    console.log(`[TraceableSDK] Capturing (reason: ${reason})...`);
+    try {
+      // 如果有 context，可以先作为 breadcrumb 记录一下
+      if (context) {
+        this.addBreadcrumb({
+          category: 'capture',
+          message: 'Capture Context',
+          data: context
+        });
+      }
+
+      const compressedData = await this.remote.exportData(reason);
+      this.download(compressedData);
+    } catch (e) {
+      console.error('[TraceableSDK] Capture failed:', e);
+    }
   }
 
-  /**
-   * 辅助方法：触发二进制数据的下载
-   */
+  private mountUI() {
+    if (document.getElementById('traceable-sdk-host')) return;
+    const host = document.createElement('div');
+    host.id = 'traceable-sdk-host';
+    document.body.appendChild(host);
+    const shadow = host.attachShadow({ mode: 'open' });
+    new FeedbackModal({ target: shadow }).$on('export', () => {
+      this.capture('feedback_button');
+    });
+  }
+
   private download(data: Uint8Array) {
     const blob = new Blob([data as any], { type: 'application/zip' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `traceable-recording-${Date.now()}.zip`;
+    a.download = `traceable-${Date.now()}.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    console.log('[TraceableSDK] Download started');
-  }
-  
-  /**
-   * 停止录制并清理资源
-   */
-  public stop() {
-      if (this.stopFn) {
-          this.stopFn();
-          this.stopFn = null;
-      }
-      // TODO: 可以进一步销毁 Worker 和 UI
   }
 }
 
-// 如果在浏览器环境中，自动挂载到 window 对象，方便直接调用
+// 导出单例
+const traceable = TraceableSDK.getInstance();
+export default traceable;
+
+// 兼容旧的 UMD 用法
 if (typeof window !== 'undefined') {
-    (window as any).TraceableSDK = TraceableSDK;
+  (window as any).traceable = traceable;
+  (window as any).TraceableSDK = TraceableSDK; // 保留类导出以便插件使用类型
 }

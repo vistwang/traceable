@@ -48,54 +48,55 @@ Best for legacy projects (jQuery), low-code platforms, or GTM injection.
 ### Basic Integration
 
 Initialize the SDK in your application's entry point:
-
 ```typescript
-import { TraceableSDK } from '@vistwang/traceable';
+import traceable, { ConsolePlugin, NetworkPlugin } from '@vistwang/traceable';
 
-// Initialize the SDK
-// Initialize the SDK with options
-const sdk = new TraceableSDK({
+traceable.init({
   autoStart: true,
-  bufferSizeMs: 30000 // 30 seconds
+  bufferSizeMs: 30000,
+  privacy: {
+    maskInputOptions: { password: true }
+  },
+  plugins: [
+    new ConsolePlugin(),
+    new NetworkPlugin()
+  ]
 });
 
-// Identify the user (Optional but recommended)
-sdk.identify('user-123', {
-  plan: 'pro',
-  role: 'admin'
-});
+// Identify user
+traceable.identify('user-123', { plan: 'pro' });
 
-// Manual capture (e.g., in error boundary)
+// Manual capture
 try {
-  // ... risky code
+  // ...
 } catch (err) {
-  sdk.capture('error_boundary');
+  traceable.capture('error_boundary', { error: err });
 }
 ```
 
-## 📚 API Reference
+## 📚 API Reference (v2)
 
-### `new TraceableSDK(options?)`
+### `traceable.init(options)`
 
--   `options.bufferSizeMs` (number): Recording buffer duration in milliseconds. Default: `30000` (30s).
--   `options.autoStart` (boolean): Whether to start recording immediately. Default: `false`.
+-   `options.plugins`: Array of plugins (e.g., `ConsolePlugin`, `NetworkPlugin`).
+-   `options.privacy`: Granular privacy controls.
+-   `options.sampleRate`: 0.0 - 1.0.
 
-### `sdk.init()`
+### `traceable.identify(userId, context?)`
 
-Starts the recording (if not already started) and mounts the feedback UI.
+Sets user identity.
 
-### `sdk.identify(userId, context?)`
+### `traceable.setTag(key, value)`
 
-Sets user identity for the recording.
+Sets a global tag for the session.
 
--   `userId` (string): Unique user identifier.
--   `context` (object): Additional metadata (e.g., role, plan).
+### `traceable.addBreadcrumb(breadcrumb)`
 
-### `sdk.capture(reason?)`
+Adds a custom event to the timeline.
 
-Manually triggers a recording export.
+### `traceable.capture(reason, context?)`
 
--   `reason` (string): The reason for the capture (e.g., "manual", "error").
+Triggers a recording export.
 
 ## 🛠 Technical Implementation
 

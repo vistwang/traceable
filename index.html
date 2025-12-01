@@ -107,11 +107,31 @@
             }
         };
 
+        // The following code replaces the old SDK interaction logic with the new v2 API usage.
+        // It's placed after the sdk.download override to ensure the override is still active.
+        import traceable from './src/core/sdk.ts';
+        import { ConsolePlugin } from './src/plugins/console.ts';
+        import { NetworkPlugin } from './src/plugins/network.ts';
+
+        // Initialize with v2 API
+        traceable.init({
+            autoStart: true,
+            bufferSizeMs: 30000,
+            privacy: {
+                maskInputOptions: { password: true }
+            },
+            plugins: [
+                new ConsolePlugin(),
+                new NetworkPlugin()
+            ]
+        });
+
         // Simple interaction logic
         let count = 0;
         document.getElementById('click-me').addEventListener('click', () => {
             count++;
             document.getElementById('counter').innerText = `Clicks: ${count}`;
+            console.log('Button clicked', count); // Should be captured by ConsolePlugin
         });
 
         // Test Identify
@@ -119,8 +139,9 @@
         identifyBtn.innerText = 'Identify User';
         identifyBtn.style.marginTop = '10px';
         identifyBtn.onclick = () => {
-            sdk.identify('test-user-123', { role: 'tester', plan: 'pro' });
-            alert('User Identified: test-user-123');
+            traceable.identify('test-user-v2', { role: 'tester', plan: 'pro' });
+            traceable.setTag('env', 'staging');
+            alert('User Identified: test-user-v2');
         };
         document.body.appendChild(identifyBtn);
 
@@ -129,7 +150,11 @@
         captureBtn.innerText = 'Manual Capture';
         captureBtn.style.marginLeft = '10px';
         captureBtn.onclick = () => {
-            sdk.capture('manual_test_button');
+            // Trigger a network request to test NetworkPlugin
+            fetch('https://jsonplaceholder.typicode.com/todos/1')
+                .then(() => {
+                    traceable.capture('manual_test_v2', { custom: 'data' });
+                });
         };
         document.body.appendChild(captureBtn);
 
